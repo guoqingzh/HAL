@@ -1,31 +1,35 @@
-#include "RealSense2Driver.h"
-#include "RealSense2Device.h"
+#include "RealSense2IMUDriver.h"
+#include "RealSense2IMUDevice.h"
 
 #include <iostream>
-
+#include <stdexcept>
 namespace hal
 {
 
-RealSense2Driver::RealSense2Driver(int width, int height, int frame_rate,
-    bool capture_color, bool capture_depth, bool capture_ir0,
-    bool capture_ir1, const std::vector<std::string>& ids) :
-  ids_(ids),
-  width_(width),
-  height_(height),
-  capture_color_(capture_color),
-  capture_depth_(capture_depth),
-  capture_ir0_(capture_ir0),
-  capture_ir1_(capture_ir1),
-  frame_rate_(frame_rate)
+RealSense2IMUDriver::RealSense2IMUDriver(const std::vector<std::string>& ids) :
+  ids_(ids)
 {
+  if (ids_.empty())
+  	throw std::runtime_error("Must provide id0=XXXX serial number");	  
+	
+  if (ids_.size() > 1)
+  	throw std::runtime_error("IMU hal only support 1 device at the moment");	  
+
+	
   Initialize();
 }
 
-RealSense2Driver::~RealSense2Driver()
+RealSense2IMUDriver::~RealSense2IMUDriver()
 {
 }
 
-bool RealSense2Driver::Capture(CameraMsg& images)
+
+void RealSense2IMUDriver::RegisterIMUDataCallback(IMUDriverDataCallback callback) {
+  m_ImuCallback = callback;
+}
+
+
+/*bool RealSense2IMUDriver::Capture(CameraMsg& images)
 {
   for (size_t i = 0; i < devices_.size(); ++i)
   {
@@ -35,125 +39,119 @@ bool RealSense2Driver::Capture(CameraMsg& images)
   return true;
 }
 
-std::shared_ptr<CameraDriverInterface> RealSense2Driver::GetInputDevice()
+std::shared_ptr<CameraDriverInterface> RealSense2IMUDriver::GetInputDevice()
 {
   return nullptr;
 }
 
-std::string RealSense2Driver::GetDeviceProperty(const std::string&)
+std::string RealSense2IMUDriver::GetDeviceProperty(const std::string&)
 {
   return "";
 }
 
-size_t RealSense2Driver::NumChannels() const
+size_t RealSense2IMUDriver::NumChannels() const
 {
   return channel_count_;
 }
 
-size_t RealSense2Driver::Width(size_t index) const
+size_t RealSense2IMUDriver::Width(size_t index) const
 {
-  std::cout << "RS: get width index:" << index << std::endl;	
   return Device(index)->Width(channel_map_[index]);
 }
 
-size_t RealSense2Driver::Height(size_t index) const
+size_t RealSense2IMUDriver::Height(size_t index) const
 {
   return Device(index)->Height(channel_map_[index]);
 }
 
-double RealSense2Driver::MaxExposure(int channel) const
+double RealSense2IMUDriver::MaxExposure(int channel) const
 {
   return Device(channel)->MaxExposure(channel_map_[channel]);
 }
 
-double RealSense2Driver::MinExposure(int channel) const
+double RealSense2IMUDriver::MinExposure(int channel) const
 {
   return Device(channel)->MinExposure(channel_map_[channel]);
 }
 
-double RealSense2Driver::MaxGain(int channel) const
+double RealSense2IMUDriver::MaxGain(int channel) const
 {
   return Device(channel)->MaxGain(channel_map_[channel]);
 }
 
-double RealSense2Driver::MinGain(int channel) const
+double RealSense2IMUDriver::MinGain(int channel) const
 {
   return Device(channel)->MinGain(channel_map_[channel]);
 }
 
-double RealSense2Driver::Exposure(int channel)
+double RealSense2IMUDriver::Exposure(int channel)
 {
   return Device(channel)->Exposure(channel_map_[channel]);
 }
 
-void RealSense2Driver::SetExposure(double exposure, int channel)
+void RealSense2IMUDriver::SetExposure(double exposure, int channel)
 {
   Device(channel)->SetExposure(exposure, channel_map_[channel]);
 }
 
-double RealSense2Driver::Gain(int channel)
+double RealSense2IMUDriver::Gain(int channel)
 {
   return Device(channel)->Gain(channel_map_[channel]);
 }
 
-void RealSense2Driver::SetGain(double gain, int channel)
+void RealSense2IMUDriver::SetGain(double gain, int channel)
 {
   Device(channel)->SetGain(gain, channel_map_[channel]);
 }
 
-double RealSense2Driver::ProportionalGain(int channel) const
+double RealSense2IMUDriver::ProportionalGain(int channel) const
 {
   return Device(channel)->ProportionalGain(channel_map_[channel]);
 }
 
-double RealSense2Driver::IntegralGain(int channel) const
+double RealSense2IMUDriver::IntegralGain(int channel) const
 {
   return Device(channel)->IntegralGain(channel_map_[channel]);
 }
 
-double RealSense2Driver::DerivativeGain(int channel) const
+double RealSense2IMUDriver::DerivativeGain(int channel) const
 {
   return Device(channel)->DerivativeGain(channel_map_[channel]);
 }
 
-double RealSense2Driver::Emitter(int device) const
+double RealSense2IMUDriver::Emitter(int device) const
 {
   return devices_[device]->Emitter();
 }
 
-void RealSense2Driver::SetEmitter(int device, double emitter) const
+void RealSense2IMUDriver::SetEmitter(int device, double emitter) const
 {
   devices_[device]->SetEmitter(emitter);
-}
+}*/
 
-size_t RealSense2Driver::NumDevices() const
+size_t RealSense2IMUDriver::NumDevices() const
 {
   return devices_.size();
-}
+} 
 
-std::shared_ptr<RealSense2Device> RealSense2Driver::Device(int channel)
+std::shared_ptr<RealSense2IMUDevice> RealSense2IMUDriver::Device(int channel)
 {
-  std::cout << "RS: device:" << channel << std::endl;
   return devices_[device_map_[channel]];
 }
 
-std::shared_ptr<const RealSense2Device> RealSense2Driver::Device(
+std::shared_ptr<const RealSense2IMUDevice> RealSense2IMUDriver::Device(
     int channel) const
 {
-  	
-  std::cout << "RS: const device:" << channel << std::endl;
-  std::cout << "RS: device_map:" << device_map_[channel] << std::endl;
-  std::cout << "test" << std::endl;
   return devices_[device_map_[channel]];
 }
 
-bool RealSense2Driver::ValidDevice(rs2::device& device, const std::string& id)
+bool RealSense2IMUDriver::ValidDevice(rs2::device& device, const std::string& id)
 {
   if (!ValidDevice(device)) return false;
   return (id == device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
 }
 
-bool RealSense2Driver::ValidDevice(rs2::device& device)
+bool RealSense2IMUDriver::ValidDevice(rs2::device& device)
 {
   static const std::string prefix = "Intel RealSense";
   if (!device.supports(RS2_CAMERA_INFO_NAME)) return false;
@@ -162,7 +160,7 @@ bool RealSense2Driver::ValidDevice(rs2::device& device)
   return result.first == prefix.end();
 }
 
-void RealSense2Driver::Initialize()
+void RealSense2IMUDriver::Initialize()
 {
   std::cout << "CreateDevice" << std::endl;		
   CreateDevices();
@@ -172,51 +170,44 @@ void RealSense2Driver::Initialize()
   CreateMapping();
 }
 
-void RealSense2Driver::CreateDevices()
+void RealSense2IMUDriver::CreateDevices()
 {
+ 
   (ids_.empty()) ? CreateAllDevices() : CreateSelectedDevices();
 }
 
-void RealSense2Driver::CreateSelectedDevices()
+void RealSense2IMUDriver::CreateSelectedDevices()
 {
   rs2::context context;
   rs2::device_list devices = context.query_devices();
 
-  for (const std::string& id : ids_)
+   for (const std::string& id : ids_)
   {
     for (rs2::device&& device : devices)
     {
-	    std::cout << "RS: validating device: id=" << id << std::endl; 
      if (ValidDevice(device, id))
       {
-	      std::cout << "RS: push back "  << std::endl;     
-        devices_.push_back(std::make_shared<RealSense2Device>(device, width_,
-            height_, frame_rate_, capture_color_, capture_depth_, capture_ir0_,
-            capture_ir1_));
+        devices_.push_back(std::make_shared<RealSense2IMUDevice>(device, m_ImuCallback));
       }
     }
   }
 }
 
-void RealSense2Driver::CreateAllDevices()
+void RealSense2IMUDriver::CreateAllDevices()
 {
   rs2::context context;
   rs2::device_list devices = context.query_devices();
 
   for (rs2::device&& device : devices)
   {
-    std::cout<<"Device SN:"<< device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)<<std::endl;
-
     if (ValidDevice(device))
     {
-      devices_.push_back(std::make_shared<RealSense2Device>(device, width_,
-          height_, frame_rate_, capture_color_, capture_depth_, capture_ir0_,
-          capture_ir1_));
+      devices_.push_back(std::make_shared<RealSense2IMUDevice>(device, m_ImuCallback));
     }
   }
 }
 
-void RealSense2Driver::SetChannelCount()
+void RealSense2IMUDriver::SetChannelCount()
 {
   std::cout << "guoqing: SetChannelCount:" << devices_.size() << std::endl;
   channel_count_ = 0;
@@ -228,7 +219,7 @@ void RealSense2Driver::SetChannelCount()
   std::cout << "guoqing: channel_count:" << channel_count_ << std::endl; 
 }
 
-void RealSense2Driver::CreateMapping()
+void RealSense2IMUDriver::CreateMapping()
 {
   size_t index = 0;
   device_map_.resize(channel_count_);

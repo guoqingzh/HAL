@@ -1,17 +1,15 @@
 find_package(RealSense2 QUIET)
 option(BUILD_RealSense2 "Build RealSense2 Driver." ON)
 
-message(STATUS "guoqing 1")
 if(RealSense2_FOUND AND BUILD_RealSense2)
-	message(STAUS "guoqing2")
-  message(STATUS "HAL: building 'RealSense2' camera driver.")
+	message(STATUS "HAL: building 'RealSense2' IMU driver.")
 
   set(SOURCES
-    RealSense2Device.h
-    RealSense2Device.cpp
-    RealSense2Driver.h
-    RealSense2Driver.cpp
-    RealSense2Factory.cpp
+	  RealSense2IMUDevice.h
+	  RealSense2IMUDevice.cpp
+	  RealSense2IMUDriver.h
+	  RealSense2IMUDriver.cpp
+	  RealSense2IMUFactory.cpp
   )
 
   add_to_hal_include_dirs(${RealSense2_INCLUDE_DIRS})
@@ -20,4 +18,3 @@ if(RealSense2_FOUND AND BUILD_RealSense2)
 
 endif()
 
-message(STATUS "guoqing3")

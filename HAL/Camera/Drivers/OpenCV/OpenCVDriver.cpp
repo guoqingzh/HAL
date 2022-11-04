@@ -1,6 +1,8 @@
 
 #include "OpenCVDriver.h"
 
+#include <opencv2/imgproc/types_c.h>
+
 #include <HAL/Utils/TicToc.h>
 
 using namespace hal;

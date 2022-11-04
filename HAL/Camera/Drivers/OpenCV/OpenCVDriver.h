@@ -11,6 +11,8 @@
 #include <opencv2/videoio/videoio.hpp>
 #endif
 
+
+#include <opencv2/videoio.hpp>
 #include <iostream>
 
 namespace hal {

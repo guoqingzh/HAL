@@ -1,20 +1,20 @@
 #include <HAL/Devices/DeviceFactory.h>
-#include "RealSense2Driver.h"
+#include "RealSense2IMUDriver.h"
 
 namespace hal
 {
 
-class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
+class RealSense2IMUFactory : public DeviceFactory<IMUDriverInterface>
 {
   public:
 
-    RealSense2Factory(const std::string& name) :
-      DeviceFactory<CameraDriverInterface>(name)
+    RealSense2IMUFactory(const std::string& name) :
+      DeviceFactory<IMUDriverInterface>(name)
     {
       Params() =
       {
         {"idN", "0", "Camera serial number, where N is zero-base index"},
-        {"size", "640x480", "Capture resolution"},
+        /*{"size", "640x480", "Capture resolution"},
         {"fps", "30", "Capture framerate"},
         {"rgb", "true", "Capture RGB image"},
         {"depth", "true", "Capture Depth image"},
@@ -22,14 +22,13 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
         {"ir1", "false", "Capture second IR image"},
         {"emitter", "0.462", "Laser emitter strength, 0 to disable"},
         {"exposure", "0", "RGB exposure value, 0 for auto-exposure"},
-        {"gain", "64", "RGB camera gain"},
+        {"gain", "64", "RGB camera gain"},*/
       };
     }
 
-    std::shared_ptr<CameraDriverInterface> GetDevice(const Uri& uri)
+    std::shared_ptr<IMUDriverInterface> GetDevice(const Uri& uri)
     {
-      std::cout << "Inside GetDevice" << std::endl;	    
-      ImageDim dims      = uri.properties.Get("size", ImageDim(640, 480));
+      /*ImageDim dims      = uri.properties.Get("size", ImageDim(640, 480));
       bool capture_color = uri.properties.Get("rgb", true);
       bool capture_depth = uri.properties.Get("depth", true);
       bool capture_ir0   = uri.properties.Get("ir0", false);
@@ -37,11 +36,8 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
       double exposure    = uri.properties.Get("exposure", 0.0);
       double gain        = uri.properties.Get("gain", 64);
       double emitter     = uri.properties.Get("emitter", 0.462);
-      int frame_rate     = uri.properties.Get("fps", 30);
+      int frame_rate     = uri.properties.Get("fps", 30);*/
 	
-      std::cout << "Get Device fps:" << frame_rate << std::endl;
-      std::cout << "rgb" << capture_color << std::endl;
-      std::cout << "depth" << capture_depth << std::endl;
       std::vector<std::string> ids;
 
       while (true)
@@ -53,26 +49,13 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
         ids.push_back(uri.properties.Get<std::string>(key, ""));
       }
 
-      std::shared_ptr<RealSense2Driver> driver =
-          std::make_shared<RealSense2Driver>(dims.x, dims.y, frame_rate,
-          capture_color, capture_depth, capture_ir0, capture_ir1, ids);
+      std::shared_ptr<RealSense2IMUDriver> driver =
+          std::make_shared<RealSense2IMUDriver>(ids);
 
-      if (capture_color)
-      {
-        const int channel = capture_ir0 + capture_ir1;
-        driver->SetExposure(exposure, channel);
-        driver->SetGain(gain, channel);
-      }
-
-      for (size_t i = 0; i < driver->NumDevices(); ++i)
-      {
-        driver->SetEmitter(i, emitter);
-      }
-      std::cout << "Exit GetDevice" << std::endl;
       return driver;
     }
 };
 
-static RealSense2Factory g_RealSenseFactory("realsense2");
+static RealSense2IMUFactory g_RealSense2IMUFactory("rs2imu");
 
 } // namespace hal
