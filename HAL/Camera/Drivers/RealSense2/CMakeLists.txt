@@ -1,9 +1,7 @@
 find_package(RealSense2 QUIET)
 option(BUILD_RealSense2 "Build RealSense2 Driver." ON)
 
-message(STATUS "guoqing 1")
 if(RealSense2_FOUND AND BUILD_RealSense2)
-	message(STAUS "guoqing2")
   message(STATUS "HAL: building 'RealSense2' camera driver.")
 
   set(SOURCES
@@ -20,4 +18,3 @@ if(RealSense2_FOUND AND BUILD_RealSense2)
 
 endif()
 
-message(STATUS "guoqing3")

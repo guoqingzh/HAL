@@ -25,7 +25,9 @@ RealSense2IMUDriver::~RealSense2IMUDriver()
 
 
 void RealSense2IMUDriver::RegisterIMUDataCallback(IMUDriverDataCallback callback) {
-  m_ImuCallback = callback;
+  for (const auto& dev : devices_) {
+    dev->RegisterIMUDataCallback(callback);
+  }
 }
 
 
@@ -187,7 +189,7 @@ void RealSense2IMUDriver::CreateSelectedDevices()
     {
      if (ValidDevice(device, id))
       {
-        devices_.push_back(std::make_shared<RealSense2IMUDevice>(device, m_ImuCallback));
+        devices_.push_back(std::make_shared<RealSense2IMUDevice>(device));
       }
     }
   }
@@ -202,21 +204,19 @@ void RealSense2IMUDriver::CreateAllDevices()
   {
     if (ValidDevice(device))
     {
-      devices_.push_back(std::make_shared<RealSense2IMUDevice>(device, m_ImuCallback));
+      devices_.push_back(std::make_shared<RealSense2IMUDevice>(device));
     }
   }
 }
 
 void RealSense2IMUDriver::SetChannelCount()
 {
-  std::cout << "guoqing: SetChannelCount:" << devices_.size() << std::endl;
   channel_count_ = 0;
 
   for (size_t i = 0; i < devices_.size(); ++i)
   {
     channel_count_ += devices_[i]->NumChannels();
   }
-  std::cout << "guoqing: channel_count:" << channel_count_ << std::endl; 
 }
 
 void RealSense2IMUDriver::CreateMapping()
@@ -225,11 +225,9 @@ void RealSense2IMUDriver::CreateMapping()
   device_map_.resize(channel_count_);
   channel_map_.resize(channel_count_);
  
-  std::cout <<  "guoqing: channel_count_" << channel_count_ << std::endl;
   for (size_t i = 0; i < devices_.size(); ++i)
   {
     const size_t count = devices_[i]->NumChannels();
-    std::cout << "guoqing: num channels" << count << std::endl; 
 
     for (size_t j = 0; j < count; ++j)
     {

@@ -2,15 +2,21 @@
 
 #include <librealsense2/rs.hpp>
 #include <HAL/IMU/IMUDriverInterface.h>
-
+#include <utility>
+#include <Eigen/Eigen>
+#include <deque>
 namespace hal
 {
+
+typedef std::pair<rs2_stream, int> stream_index_pair;
+const stream_index_pair GYRO{RS2_STREAM_GYRO, 0};
+const stream_index_pair ACCEL{RS2_STREAM_ACCEL, 0};
 
 class RealSense2IMUDevice 
 {
   public:
 
-    RealSense2IMUDevice(rs2::device& device, IMUDriverDataCallback callback);
+    RealSense2IMUDevice(rs2::device& device);
 
     virtual ~RealSense2IMUDevice();
 
@@ -52,6 +58,7 @@ class RealSense2IMUDevice
 
     void SetEmitter(double emitter) const;*/
 
+    void RegisterIMUDataCallback(IMUDriverDataCallback callback);
   protected:
 
     /*void EnableAutoExposure(int channel);
@@ -70,10 +77,28 @@ class RealSense2IMUDevice
 
     rs2::sensor& GetSensor(int channel);
 
+
   private:
+
+        class CimuData
+        {
+            public:
+                CimuData() : m_time_ns(-1) {};
+                CimuData(const stream_index_pair type, Eigen::Vector3d data, double time):
+                    m_type(type),
+                    m_data(data),
+                    m_time_ns(time){};
+                bool is_set() {return m_time_ns > 0;};
+            public:
+                stream_index_pair m_type;
+                Eigen::Vector3d m_data;
+                double          m_time_ns;
+        };
+
 
     void Initialize();
 
+    
     void CreateSerialNumber();
 
     void CreatePipeline();
@@ -81,6 +106,10 @@ class RealSense2IMUDevice
     void ConfigurePipeline();
 
     void CreateConfiguration();
+
+    hal::ImuMsg CreateUnitedMessage(const CimuData accel_data, const CimuData gyro_data);
+
+    void FillImuData_LinearInterpolation(const CimuData imu_data, std::deque<hal::ImuMsg>& imu_msgs);
 
     /*void ConfigureInfraredStream(int index);
 

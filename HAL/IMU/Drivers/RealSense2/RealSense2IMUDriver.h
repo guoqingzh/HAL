@@ -107,7 +107,6 @@ class RealSense2IMUDriver : public IMUDriverInterface
     bool capture_ir1_;
 
     int frame_rate_;*/
-    IMUDriverDataCallback m_ImuCallback;
 };
 
 } // namespace hal

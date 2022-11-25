@@ -1,14 +1,14 @@
 #include "RealSense2IMUDevice.h"
 #include <HAL/Utils/TicToc.h>
 #include <iostream>
+#include <deque>
 
 namespace hal
 {
 
-RealSense2IMUDevice::RealSense2IMUDevice(rs2::device& device, IMUDriverDataCallback callback) :
+RealSense2IMUDevice::RealSense2IMUDevice(rs2::device& device) :
   device_(device)
 {
-  m_ImuCallback = callback;	
   Initialize();
 }
 
@@ -254,6 +254,13 @@ void RealSense2IMUDevice::Initialize()
   CreateStreams();
 }
 
+
+void RealSense2IMUDevice::RegisterIMUDataCallback(IMUDriverDataCallback callback) 
+{
+   m_ImuCallback = callback;	 
+}
+
+
 void RealSense2IMUDevice::CreateSerialNumber()
 {
   serial_string_ = device_.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
@@ -278,55 +285,120 @@ void RealSense2IMUDevice::ConfigurePipeline()
   pipeline_->start(*configuration_, [&](rs2::frame frame)
   {		  
      auto motion = frame.as<rs2::motion_frame>();
-     bool valid_accel = false;
-     bool valid_gyro = false;
-     rs2_vector gyro_data;
-     rs2_vector accel_data;
-     //std::cout << "IMU callback" << std::endl;
-     if (motion && motion.get_profile().stream_type() == RS2_STREAM_GYRO && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
-     {
-       gyro_data = motion.get_motion_data();
-       valid_gyro = true;
+     if (!motion) {
+        std::cout << "Not a motion frame is NULL" << std::endl;
+    	return;
      }
-     if (motion && motion.get_profile().stream_type() == RS2_STREAM_ACCEL && motion.get_profile().format() == RS2_FORMAT_MOTION_XYZ32F)
-      { 
-        accel_data = motion.get_motion_data();
-        valid_accel = true;
-      }
-		  
-     std::cout << "valid:" << valid_accel << "," << valid_gyro << std::endl;	
-     if (valid_accel || valid_gyro) 
-     {
-      	hal::ImuMsg dataIMU;
-        {
-          //std::unique_lock<std::mutex> lk(dataLock);
-          if (valid_accel) {
-      	  hal::VectorMsg* pbAccel = dataIMU.mutable_accel();
-      	  pbAccel->add_data(accel_data.x);
-      	  pbAccel->add_data(accel_data.y);
-      	  pbAccel->add_data(accel_data.z);
-	  //std::cout << "IMU accel:" << accel_data << std::endl;
-	  }
+     
+     auto stream = motion.get_profile().stream_type();
+     if (stream != RS2_STREAM_GYRO && stream != RS2_STREAM_ACCEL) {
+        std::cout << "Stream is neither GYRO or ACCEL" << std::endl;
+        return;
+     }
+     auto stream_index = (stream == GYRO.first) ? GYRO : ACCEL;
+     auto format = motion.get_profile().format();
+     if (format != RS2_FORMAT_MOTION_XYZ32F) {
+        std::cout << "Format is not XYZ32F" << std::endl;
+        return;
+     }
+     
+     double frame_time = motion.get_timestamp();
+	
+     auto data = motion.get_motion_data();
+     Eigen::Vector3d v(data.x, data.y, data.z);
 
-	  if (valid_gyro) {
-          hal::VectorMsg* pbGyro = dataIMU.mutable_gyro();
-          pbGyro->add_data(gyro_data.x);
-          pbGyro->add_data(gyro_data.y);
-          pbGyro->add_data(gyro_data.z);
-	  //std::cout << "IMU gyro:" << gyro_data << std::endl;
-	  }
-	  dataIMU.set_device_time(motion.get_timestamp());
-          dataIMU.set_system_time(hal::Tic());
-       }
+     auto timestamp = motion.get_timestamp();
+     auto timestamp_domain = motion.get_frame_timestamp_domain();
+        
+     if (timestamp_domain != RS2_TIMESTAMP_DOMAIN_GLOBAL_TIME) {
+	std::cout << "timestamp domain is not Global time " << std::endl;      
+     	return;	     
+     }
 
-       if( m_ImuCallback )
+     std::deque<hal::ImuMsg> imu_msgs;
+     CimuData imu_data(stream_index, v, timestamp*1e6);
+     FillImuData_LinearInterpolation(imu_data, imu_msgs);
+
+     while (imu_msgs.size())
+       {	
+       	if( m_ImuCallback )
          {
-           //std::cout << "IMU:" << dataIMU << std::endl;	   
+           hal::ImuMsg dataIMU = imu_msgs.front();
            m_ImuCallback( dataIMU );
          }
-     }	
+	 imu_msgs.pop_front();
+       }	
   });
 }
+
+template <typename T> T lerp(const T &a, const T &b, const double t) {
+  return a * (1.0 - t) + b * t;
+}
+
+void RealSense2IMUDevice::FillImuData_LinearInterpolation(const CimuData imu_data, std::deque<hal::ImuMsg>& imu_msgs)
+{
+    static std::deque<CimuData> _imu_history;
+    _imu_history.push_back(imu_data);
+    stream_index_pair type(imu_data.m_type);
+    imu_msgs.clear();
+
+    if ((type != ACCEL) || _imu_history.size() < 3)
+        return;
+
+    std::deque<CimuData> gyros_data;
+    CimuData accel0, accel1, crnt_imu;
+
+    while (_imu_history.size())
+    {
+        crnt_imu = _imu_history.front();
+        _imu_history.pop_front();
+        if (!accel0.is_set() && crnt_imu.m_type == ACCEL)
+        {
+            accel0 = crnt_imu;
+        }
+        else if (accel0.is_set() && crnt_imu.m_type == ACCEL)
+        {
+            accel1 = crnt_imu;
+            const double dt = accel1.m_time_ns - accel0.m_time_ns;
+
+            while (gyros_data.size())
+            {
+                CimuData crnt_gyro = gyros_data.front();
+                gyros_data.pop_front();
+                const double alpha = (crnt_gyro.m_time_ns - accel0.m_time_ns) / dt;
+                CimuData crnt_accel(ACCEL, lerp(accel0.m_data, accel1.m_data, alpha), crnt_gyro.m_time_ns);
+                imu_msgs.push_back(CreateUnitedMessage(crnt_accel, crnt_gyro));
+            }
+            accel0 = accel1;
+        }
+        else if (accel0.is_set() && crnt_imu.m_time_ns >= accel0.m_time_ns && crnt_imu.m_type == GYRO)
+        {
+            gyros_data.push_back(crnt_imu);
+        }
+    }
+    _imu_history.push_back(crnt_imu);
+    return;
+}
+
+
+hal::ImuMsg RealSense2IMUDevice::CreateUnitedMessage(const CimuData accel_data, const CimuData gyro_data)
+{
+   hal::ImuMsg dataIMU;
+   hal::VectorMsg* pbAccel = dataIMU.mutable_accel();
+   pbAccel->add_data(accel_data.m_data.x());
+   pbAccel->add_data(accel_data.m_data.y());
+   pbAccel->add_data(accel_data.m_data.z());
+
+   hal::VectorMsg* pbGyro = dataIMU.mutable_gyro();
+   pbGyro->add_data(gyro_data.m_data.x());
+   pbGyro->add_data(gyro_data.m_data.y());
+   pbGyro->add_data(gyro_data.m_data.z());
+	  
+   dataIMU.set_device_time(gyro_data.m_time_ns*1e-6);
+   dataIMU.set_system_time(hal::Tic());
+   return dataIMU;
+}
+
 
 void RealSense2IMUDevice::CreateConfiguration()
 {
@@ -339,13 +411,13 @@ void RealSense2IMUDevice::CreateConfiguration()
 
 void RealSense2IMUDevice::ConfigureAccelStream()
 {
-  configuration_->enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F,63);
+  configuration_->enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
 }
 
 
 void RealSense2IMUDevice::ConfigureGyroStream()
 {
-  configuration_->enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F,63);
+  configuration_->enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
 }
 
 /*void RealSense2IMUDevice::ConfigureInfraredStream(int index)

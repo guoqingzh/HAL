@@ -218,14 +218,12 @@ void RealSense2Driver::CreateAllDevices()
 
 void RealSense2Driver::SetChannelCount()
 {
-  std::cout << "guoqing: SetChannelCount:" << devices_.size() << std::endl;
   channel_count_ = 0;
 
   for (size_t i = 0; i < devices_.size(); ++i)
   {
     channel_count_ += devices_[i]->NumChannels();
   }
-  std::cout << "guoqing: channel_count:" << channel_count_ << std::endl; 
 }
 
 void RealSense2Driver::CreateMapping()
@@ -234,11 +232,9 @@ void RealSense2Driver::CreateMapping()
   device_map_.resize(channel_count_);
   channel_map_.resize(channel_count_);
  
-  std::cout <<  "guoqing: channel_count_" << channel_count_ << std::endl;
   for (size_t i = 0; i < devices_.size(); ++i)
   {
     const size_t count = devices_[i]->NumChannels();
-    std::cout << "guoqing: num channels" << count << std::endl; 
 
     for (size_t j = 0; j < count; ++j)
     {
