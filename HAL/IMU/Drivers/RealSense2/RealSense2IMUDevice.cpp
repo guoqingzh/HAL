@@ -316,6 +316,7 @@ void RealSense2IMUDevice::ConfigurePipeline()
      }
 
      std::deque<hal::ImuMsg> imu_msgs;
+     // timestamp from RS is in milliseconds, convert it to nanoseconds
      CimuData imu_data(stream_index, v, timestamp*1e6);
      FillImuData_LinearInterpolation(imu_data, imu_msgs);
 
@@ -385,15 +386,33 @@ hal::ImuMsg RealSense2IMUDevice::CreateUnitedMessage(const CimuData accel_data, 
 {
    hal::ImuMsg dataIMU;
    hal::VectorMsg* pbAccel = dataIMU.mutable_accel();
-   pbAccel->add_data(accel_data.m_data.x());
+
+   // the accel_data and gyro_data is in RDF (aligned with depth CS)
+   // We convert it to FLU here , this is expected by vicalib 
+   // X_FLU = Z_RDF
+   // Y_FLU = -X_RDF
+   // Z_FLU = -Y_RDF
+
+
+   //pbAccel->add_data(accel_data.m_data.z());
+   //pbAccel->add_data(-accel_data.m_data.x());
+   //pbAccel->add_data(-accel_data.m_data.y());
+
+  pbAccel->add_data(accel_data.m_data.x());
    pbAccel->add_data(accel_data.m_data.y());
    pbAccel->add_data(accel_data.m_data.z());
 
+
+
    hal::VectorMsg* pbGyro = dataIMU.mutable_gyro();
+   //pbGyro->add_data(gyro_data.m_data.z());
+   //pbGyro->add_data(-gyro_data.m_data.x());
+   //pbGyro->add_data(-gyro_data.m_data.y());
+	
    pbGyro->add_data(gyro_data.m_data.x());
    pbGyro->add_data(gyro_data.m_data.y());
    pbGyro->add_data(gyro_data.m_data.z());
-	  
+	
    dataIMU.set_device_time(gyro_data.m_time_ns*1e-6);
    dataIMU.set_system_time(hal::Tic());
    return dataIMU;
