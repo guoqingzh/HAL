@@ -5,6 +5,7 @@
 #include <utility>
 #include <Eigen/Eigen>
 #include <deque>
+#include <fstream>
 namespace hal
 {
 
@@ -154,6 +155,9 @@ class RealSense2IMUDevice
 
     IMUDriverDataCallback m_ImuCallback;
 
+    std::ofstream accel_csv_;
+    std::ofstream gyro_csv_;
+    std::ofstream ts_csv_;
     /*int width_;
 
     int height_;

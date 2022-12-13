@@ -77,7 +77,6 @@ CsvDriver::CsvDriver(
     if( _GetNextTime( m_dNextTime, m_dNextTimePPS ) == false ) {
         throw std::runtime_error("Umm..");
     }
-
     // push timestamp to VD queue
     hal::DeviceTime::PushTime( m_dNextTime );
 
@@ -182,10 +181,10 @@ void CsvDriver::_ThreadCaptureFunc()
             getline ( m_pFileMag, sValue );
             pbVec->add_data( atof( sValue.c_str() ) );
         }
-
-        if( (m_bHaveAccel || m_bHaveGyro || m_bHaveMag) && m_IMUCallback ) {
+        if( (m_bHaveAccel || m_bHaveGyro ) && m_IMUCallback ) {
             dataIMU.set_device_time(m_dNextTimePPS);
             dataIMU.set_system_time(m_dNextTime);
+
             m_IMUCallback( dataIMU );
         }
 
@@ -236,7 +235,6 @@ inline bool CsvDriver::_GetNextTime(
     dNextTime = atof( sValue.c_str() );
     getline ( m_pFileTime, sValue );
     dNextTimePPS = atof( sValue.c_str() );
-
     if( m_pFileTime.eof() ) {
         return false;
     }

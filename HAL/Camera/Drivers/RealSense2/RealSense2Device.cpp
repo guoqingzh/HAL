@@ -1,9 +1,15 @@
 #include "RealSense2Device.h"
 #include <HAL/Utils/TicToc.h>
 #include <iostream>
-
+#include <fstream>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 namespace hal
 {
+
+// Can't have both true
+bool gRecordRGB = true;
+bool gRecordTimestamp = false;
 
 RealSense2Device::RealSense2Device(rs2::device& device, int width, int height,
     int frame_rate, bool capture_color, bool capture_depth, bool capture_ir0,
@@ -17,8 +23,6 @@ RealSense2Device::RealSense2Device(rs2::device& device, int width, int height,
   capture_ir1_(capture_ir1),
   frame_rate_(frame_rate)
 {
-  std::cout << "capture color" << capture_color_ << std::endl;
-  std::cout << "capture depth" << capture_depth_ << std::endl;  
   Initialize();
 }
 
@@ -164,22 +168,16 @@ void RealSense2Device::SetEmitter(double emitter) const
 
 void RealSense2Device::EnableAutoExposure(int channel)
 {
-  std::cout << "get sensor:" << std::endl; 
   rs2::sensor& sensor = GetSensor(channel);
-  std::cout << "set op auto exp, sensor:" << sensor.get_info(RS2_CAMERA_INFO_NAME) <<std::endl; 
   if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+	std::cout<< "[HAL] Enable Auto exposure of sensor:" << sensor.get_info(RS2_CAMERA_INFO_NAME) <<std::endl;    
   	sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, true);
    }
   if (IsColorStream(channel))
   {
-	  
-    std::cout << "set op auto wb" << std::endl; 
     sensor.set_option(RS2_OPTION_ENABLE_AUTO_WHITE_BALANCE, true);
-
-    std::cout << "set op auto bc" << std::endl; 
     sensor.set_option(RS2_OPTION_BACKLIGHT_COMPENSATION, true);
   }
-  std::cout << "enable done" << std::endl;
 }
 
 void RealSense2Device::DisableAutoExposure(int channel, double exposure)
@@ -222,6 +220,21 @@ void RealSense2Device::CaptureColorStream(CameraMsg& images)
   image->set_data(frame.get_data(), bytes);
   image->set_type(PB_UNSIGNED_BYTE);
   image->set_format(PB_RGB);
+  
+  if (gRecordRGB) {
+     void* ptr = const_cast<void*>(static_cast<const void*>(image->data().c_str()));
+     cv::Mat mat(image->height(), image->width(), CV_8UC3, ptr);
+     cv::imwrite("cali_seq/rgb_0/rgb_0_"+std::to_string(image->timestamp()*0.001)+".png", mat);
+          
+  }
+
+ // saving large image files will harm the FPS, but we need image name for statistic collection , so we use this temp solution to have an empty file with needed timestamp filename
+ if (gRecordTimestamp) {
+    std::ofstream myfile;
+     myfile.open("cali_seq/rgb_0/rgb_0_"+std::to_string(image->timestamp()*0.001)+".png");
+     myfile << "test"<< std::endl;
+     myfile.close();
+ }
 }
 
 void RealSense2Device::CaptureDepthStream(CameraMsg& images)

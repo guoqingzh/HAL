@@ -28,7 +28,6 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
 
     std::shared_ptr<CameraDriverInterface> GetDevice(const Uri& uri)
     {
-      std::cout << "Inside GetDevice" << std::endl;	    
       ImageDim dims      = uri.properties.Get("size", ImageDim(640, 480));
       bool capture_color = uri.properties.Get("rgb", true);
       bool capture_depth = uri.properties.Get("depth", true);
@@ -38,10 +37,10 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
       double gain        = uri.properties.Get("gain", 64);
       double emitter     = uri.properties.Get("emitter", 0.462);
       int frame_rate     = uri.properties.Get("fps", 30);
-	
-      std::cout << "Get Device fps:" << frame_rate << std::endl;
-      std::cout << "rgb" << capture_color << std::endl;
-      std::cout << "depth" << capture_depth << std::endl;
+      
+      std::cout << "[HAL] Frame size:" << dims.x << "x" << dims.y << std::endl;       
+      std::cout << "[HAL] FPS:" << frame_rate << std::endl;
+      std::cout << "[HAL] Enable RGB:" << capture_color << std::endl;
       std::vector<std::string> ids;
 
       while (true)
@@ -68,7 +67,6 @@ class RealSense2Factory : public DeviceFactory<CameraDriverInterface>
       {
         driver->SetEmitter(i, emitter);
       }
-      std::cout << "Exit GetDevice" << std::endl;
       return driver;
     }
 };

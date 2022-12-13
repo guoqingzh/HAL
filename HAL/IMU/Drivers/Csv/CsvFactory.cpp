@@ -23,7 +23,6 @@ public:
         const std::string sFileGyro  = uri.properties.Get( "Gyro", sDataSourceDir+"/gyro.txt");
         const std::string sFileMag   = uri.properties.Get( "Mag", sDataSourceDir+"/mag.txt");
         const std::string sFileTimestamp  = uri.properties.Get( "Timestamp", sDataSourceDir+"/timestamp.txt");
-        
         CsvDriver* pDriver = new CsvDriver(sFileAccel, sFileGyro, sFileMag, sFileTimestamp);
         return std::shared_ptr<IMUDriverInterface>( pDriver );
     }

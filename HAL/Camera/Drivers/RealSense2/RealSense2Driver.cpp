@@ -52,7 +52,6 @@ size_t RealSense2Driver::NumChannels() const
 
 size_t RealSense2Driver::Width(size_t index) const
 {
-  std::cout << "RS: get width index:" << index << std::endl;	
   return Device(index)->Width(channel_map_[index]);
 }
 
@@ -133,7 +132,6 @@ size_t RealSense2Driver::NumDevices() const
 
 std::shared_ptr<RealSense2Device> RealSense2Driver::Device(int channel)
 {
-  std::cout << "RS: device:" << channel << std::endl;
   return devices_[device_map_[channel]];
 }
 
@@ -141,9 +139,6 @@ std::shared_ptr<const RealSense2Device> RealSense2Driver::Device(
     int channel) const
 {
   	
-  std::cout << "RS: const device:" << channel << std::endl;
-  std::cout << "RS: device_map:" << device_map_[channel] << std::endl;
-  std::cout << "test" << std::endl;
   return devices_[device_map_[channel]];
 }
 
@@ -164,11 +159,8 @@ bool RealSense2Driver::ValidDevice(rs2::device& device)
 
 void RealSense2Driver::Initialize()
 {
-  std::cout << "CreateDevice" << std::endl;		
   CreateDevices();
-  std::cout << "Set ChannelCount" << std::endl;
   SetChannelCount();
-  std::cout << "Create Mapping" << std::endl;
   CreateMapping();
 }
 
@@ -186,10 +178,8 @@ void RealSense2Driver::CreateSelectedDevices()
   {
     for (rs2::device&& device : devices)
     {
-	    std::cout << "RS: validating device: id=" << id << std::endl; 
      if (ValidDevice(device, id))
       {
-	      std::cout << "RS: push back "  << std::endl;     
         devices_.push_back(std::make_shared<RealSense2Device>(device, width_,
             height_, frame_rate_, capture_color_, capture_depth_, capture_ir0_,
             capture_ir1_));
@@ -205,8 +195,6 @@ void RealSense2Driver::CreateAllDevices()
 
   for (rs2::device&& device : devices)
   {
-    std::cout<<"Device SN:"<< device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)<<std::endl;
-
     if (ValidDevice(device))
     {
       devices_.push_back(std::make_shared<RealSense2Device>(device, width_,

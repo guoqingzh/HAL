@@ -6,14 +6,20 @@
 namespace hal
 {
 
+bool gRecordIMU = true;
+
 RealSense2IMUDevice::RealSense2IMUDevice(rs2::device& device) :
-  device_(device)
+  device_(device), accel_csv_("./cali_seq/accel.txt"), gyro_csv_("./cali_seq/gyro.txt"),
+  ts_csv_("./cali_seq/timestamp.txt")
 {
   Initialize();
 }
 
 RealSense2IMUDevice::~RealSense2IMUDevice()
 {
+  accel_csv_.close();
+  gyro_csv_.close();
+  ts_csv_.close();
 }
 
 /*bool RealSense2IMUDevice::Capture(CameraMsg& images)
@@ -326,6 +332,13 @@ void RealSense2IMUDevice::ConfigurePipeline()
          {
            hal::ImuMsg dataIMU = imu_msgs.front();
            m_ImuCallback( dataIMU );
+
+	   if (gRecordIMU) {
+	     accel_csv_ << dataIMU.accel().data(0)<<"," << dataIMU.accel().data(1) << "," << dataIMU.accel().data(2) << std::endl;
+	     gyro_csv_ << dataIMU.gyro().data(0) << "," << dataIMU.gyro().data(1) << "," << dataIMU.gyro().data(2) << std::endl;
+	     // TODO: should check FLAGS_use_system_time to use dataIMU.system_time();	
+	     ts_csv_ << std::to_string(dataIMU.device_time()*0.001)<<"," << std::to_string(dataIMU.device_time()*0.001) << std::endl;
+	   }
          }
 	 imu_msgs.pop_front();
        }	
