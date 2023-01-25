@@ -8,8 +8,8 @@ namespace hal
 {
 
 // Can't have both true
-bool gRecordRGB = true;
-bool gRecordTimestamp = false;
+bool gRecordRGB = false;
+bool gRecordTimestamp = true;
 
 RealSense2Device::RealSense2Device(rs2::device& device, int width, int height,
     int frame_rate, bool capture_color, bool capture_depth, bool capture_ir0,
