@@ -28,8 +28,10 @@ if(ANDROID)
     unset(PROTOBUF_PROTOC_EXECUTABLE CACHE)
     find_host_package(Protobuf REQUIRED)
 endif()
+MESSAGE(STATUS ${PROTOBUF_PROTOC_EXECUTABLE})
 find_package( Sophus REQUIRED )
 find_package( GLog REQUIRED )
+find_package( Calibu REQUIRED )
 find_package( TinyXML2 QUIET )
 
 if(TinyXML2_FOUND)
@@ -51,6 +53,7 @@ endif()
 
 list( APPEND USER_INC   ${EIGEN3_INCLUDE_DIR} )
 list( APPEND USER_INC   ${Sophus_INCLUDE_DIRS} )
+list( APPEND USER_INC   ${Calibu_INCLUDE_DIRS} )
 list( APPEND USER_INC   ${PROTOBUF_INCLUDE_DIR} )
 list( APPEND USER_INC   ${GLog_INCLUDE_DIRS} )
 

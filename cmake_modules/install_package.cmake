@@ -73,8 +73,10 @@ function(install_package)
   # construct Cflags arguments for pkg-config file
   set( PACKAGE_CFLAGS "${PACKAGE_CFLAGS} ${CMAKE_C_FLAGS}" )
   foreach(var IN LISTS PACKAGE_INCLUDE_DIRS )
+    list( APPEND PACKAGE_INCLUDE_DIRS ${var} )
     set( PACKAGE_CFLAGS "${PACKAGE_CFLAGS} -I${var}" )
   endforeach()
+  list( APPEND PACKAGE_INCLUDE_DIRS ${CMAKE_INSTALL_PREFIX}/include)
 
   # now construct Libs.private arguments 
   foreach(var IN LISTS PACKAGE_LINK_DIRS )
@@ -102,7 +104,7 @@ function(install_package)
             endif()
             get_target_property( _target_library ${PACKAGE_LIB_NAME} LOCATION )
             get_filename_component( _lib ${_target_library} NAME )
-            list( APPEND PACKAGE_LINK_LIBS ${PACKAGE_LIB_NAME} )
+            list( APPEND PACKAGE_LINK_LIBS ${_target_library} )
         endif()
 
         if( PACKAGE_INSTALL_HEADER_DIRS )
